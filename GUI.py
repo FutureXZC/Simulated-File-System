@@ -71,11 +71,14 @@ class MainWindow():
     def cd_in(self, event):
         for item in self.ftree.selection():
             item_text = self.ftree.item(item,"values")
-            if self.disk.cd_in(item_text[0]):
+            flag = self.disk.cd_in(item_text[0])
+            if flag == 2:
                 print('>> cd ' + item_text[0])
                 self.refesh()
-            else:
+            elif flag == 1:
                 print('>> start ', item_text[0])
+            else:
+                print('>> 权限不足，无法运行。')
 
     # 点击返回按钮 - 返回上一级
     def cd_back(self):
@@ -98,16 +101,20 @@ class MainWindow():
     # 新建文件夹
     def mkdir(self):
         time_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        self.disk.mkdir_or_touch(time_str, 1)
-        self.refesh()
-        print('>> mkdir ' + time_str)
+        if self.disk.mkdir_or_touch(time_str, 1):
+            self.refesh()
+            print('>> mkdir ' + time_str)
+        else:
+            print('>> 权限不足，无法新建文件夹。')
 
     # 创建新文件
     def touch(self):
         time_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        self.disk.mkdir_or_touch(time_str, 2)
-        self.refesh()
-        print('>> touch ' + time_str)
+        if self.disk.mkdir_or_touch(time_str, 2):
+            self.refesh()
+            print('>> touch ' + time_str)
+        else:
+            print('>> 权限不足，无法新建文件。')
     
     # 删除文件
     def f_delete(self):
@@ -115,6 +122,7 @@ class MainWindow():
             item_text = self.ftree.item(item, "values")
             src_name = item_text[0]
             src_type = item_text[2]
+        # 返回状态码，若为2则删除文件夹，若为1则删除文件，若为0则无权限删除
         flag =  self.disk.delete(src_name, src_type)
         if flag == 2:
             print('>> rd /s /q ' + src_name)
@@ -123,7 +131,7 @@ class MainWindow():
             print('>> del ' + src_name)
             self.refesh()
         else:
-            print('>> 权限不足无法删除。')
+            print('>> 权限不足，无法删除。')
 
     # 单击鼠标右键 - 重命名文件或文件夹
     def rename(self, event): # 右键进入编辑状态
@@ -133,33 +141,34 @@ class MainWindow():
         children = self.ftree.get_children()
         # 被选中节点的列编号，用于输入框定位
         column= self.ftree.identify_column(event.x)
-        # 被选中节点的行编号，输入框定位与更新值
+        # 被选中节点的行编号，用于输入框定位与更新值
         row = children.index(self.ftree.selection()[0]) + 1
         cn = int(str(column).replace('#',''))
         rn = int(str(row).replace('I',''))
-        entryedit = Entry(self.win, width = 25 + (cn - 1) * 16)
-        entryedit.place(x = 105 + (cn - 1) * 130, y = 88 + rn * 20)
+        entry_edit = Entry(self.win, width = 25 + (cn - 1) * 16)
+        entry_edit.place(x = 105 + (cn - 1) * 130, y = 88 + rn * 20)
+        # 按钮事件，用于触发文件名修改
         def save_edit():
-            dst_name = entryedit.get()
-            if self.disk.rename(src_name, dst_name):
+            dst_name = entry_edit.get()
+            flag = self.disk.rename(src_name, dst_name)
+            if flag == 2:
                 self.ftree.set(item, column = column, value = dst_name)
                 print('>> rename(' + src_name + ', ' + dst_name + ')')
-            else:
+            elif flag == 1:
                 print('>> 文件名已存在。')
-            entryedit.destroy()
-            okb.destroy()
-        okb = Button(self.win, text='OK', width = 4, command = save_edit)
-        okb.place(x = 285 + (cn - 1) * 242, y = 82 + rn * 20)
+            else:
+                print('>> 权限不足，无法修改。')
+            entry_edit.destroy()
+            b_ok.destroy()
+        # "OK"按键
+        b_ok = Button(self.win, text='OK', width = 4, command = save_edit)
+        b_ok.place(x = 285 + (cn - 1) * 242, y = 82 + rn * 20)
 
     # 绑定事件，运行窗口
     def show(self):
         self.ftree.bind('<Double-1>', self.cd_in)  # 双击鼠标左键
         self.ftree.bind('<Button-3>', self.rename)  # 单击鼠标右键
         self.win.mainloop()
-
-    # 退出
-    def quit(self):
-        self.win.quit()
 
 
 # 登录窗口
@@ -194,6 +203,7 @@ class loginWindow():
         self.e_user_pwd.pack(side = RIGHT)
         self.b_login.pack(side = TOP)
 
+    # 运行
     def show(self):
         self.win.mainloop()
 
@@ -208,17 +218,18 @@ class loginWindow():
                 line_tmp = line.strip('\n').split(' ')
                 user_info[line_tmp[0]] = [line_tmp[1], line_tmp[2]]
                 line = f.readline()
+        # 判断用户名和密码是否一致，若一致则推出当前窗口，将用户信息登录到主界面
         if user_name in user_info and user_info[user_name][0] == user_pwd:
+            print(user_info[user_name][1])
             user = User(user_name, user_info[user_name][1])
+            self.win.quit()
+            self.win.destroy()
             main_window = MainWindow(user)
-            # main_window = MainWindow(user)
-            # main_window.show()
+            main_window.show()
 
 
 if __name__ == "__main__":
-    # login = loginWindow()
-    # login.show()
-    user = User('root', 'rw')
-    main_window = MainWindow(user)
-    main_window.show()
-    # os.system('type nul>root/test.go')
+    # 主函数内只需生成登录窗口即可
+    login = loginWindow()
+    login.show()
+    user = User('Tony', 'rw')

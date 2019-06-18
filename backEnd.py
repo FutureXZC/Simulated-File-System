@@ -191,12 +191,15 @@ class OSManager():
                     self.here = item
                     self.main_board.clear()
                     self.main_board = item.get_children()
-                    return True
+                    return 2
                 else:  # 若为可执行程序，则运行程序
-                    target_path = item.path + target_name
-                    os.system('start ' + target_path)
-                    return False
-    
+                    if 'x' in self.user.authority:
+                        target_path = item.path + target_name
+                        os.system('start ' + target_path)
+                        return 1
+                    else:
+                        return 0
+                        
     # 返回上一级
     def cd_back(self):
         self.main_board.clear()
@@ -205,49 +208,57 @@ class OSManager():
 
     # 重命名
     def rename(self, src_name, dst_name):
-        # 获取文件名列表
-        ls_list = []
-        for item in self.main_board:
-            ls_list.append(item.name)
-        # 要求重命名的文件不可与当前文件或文件夹同名
-        for item in self.main_board:
-            if item.name == src_name:
-                # 若文件名已存在，则拒绝修改
-                if dst_name in ls_list:
-                    return False
-                # 若文件名不存在，则调用自身的rename方法修改
-                else:
-                    item.rename(dst_name)
-                    return True
+        # 检查权限
+        if 'w' in self.user.authority or 'x' in self.user.authority:
+            # 获取文件名列表
+            ls_list = []
+            for item in self.main_board:
+                ls_list.append(item.name)
+            # 要求重命名的文件不可与当前文件或文件夹同名
+            for item in self.main_board:
+                if item.name == src_name:
+                    # 若文件名已存在，则拒绝修改
+                    if dst_name in ls_list:
+                        return 1
+                    # 若文件名不存在，则调用自身的rename方法修改
+                    else:
+                        item.rename(dst_name)
+                        return 2
+        # 权限不足
+        else:
+            return 0
 
     # 创建文件夹或文件
     def mkdir_or_touch(self, dir_name, status):
-        # 获取路径
-        if status == 2:
-            dir_name = dir_name + '.txt'
-            target_path = self.here.path + self.here.name + '/' + dir_name
-        elif status ==1:
-            target_path = self.here.path + self.here.name + '/' + dir_name
-        print(target_path)
-        # 创建
-        if status == 2:  # 创建文件
-            os.system('type nul>' + target_path)  
-            time_stamp = os.path.getmtime(target_path)  # 获取当前时间作为新文件名
-            time_array = time.localtime(time_stamp)
-            a = File(self.user, self.here, dir_name, self.user.name, time.strftime('%Y-%m-%d %H:%M:%S', time_array))
-        elif status ==1:  # 创建文件夹
-            os.makedirs(target_path, 0o777)
-            time_stamp = os.path.getmtime(target_path)  # 获取当前时间作为文件夹名称
-            time_array = time.localtime(time_stamp)
-            a = Folder(self.user, self.here, dir_name, self.user.name, time.strftime('%Y-%m-%d %H:%M:%S', time_array))
-        # 将新建文件或文件夹对象加入主界面对象列表
-        self.main_board.append(a)
-        f_author = self.here.get_config(self.here.path + self.here.name + '/config.txt')  # 更新当前目录的config
-        f_author[dir_name] = self.user.name
-        self.here.update_config(f_author)
-        if status == 1:
-            with open(target_path + '/config.txt', 'w') as f:  # 为新建的文件夹创建config
-                f.write('config.txt root')
+        if 'w' in self.user.authority or 'x' in self.user.authority:
+            # 获取路径
+            if status == 2:
+                dir_name = dir_name + '.txt'
+                target_path = self.here.path + self.here.name + '/' + dir_name
+            elif status ==1:
+                target_path = self.here.path + self.here.name + '/' + dir_name
+            # 创建
+            if status == 2:  # 创建文件
+                os.system('type nul>' + target_path)  
+                time_stamp = os.path.getmtime(target_path)  # 获取当前时间作为新文件名
+                time_array = time.localtime(time_stamp)
+                a = File(self.user, self.here, dir_name, self.user.name, time.strftime('%Y-%m-%d %H:%M:%S', time_array))
+            elif status ==1:  # 创建文件夹
+                os.makedirs(target_path, 0o777)
+                time_stamp = os.path.getmtime(target_path)  # 获取当前时间作为文件夹名称
+                time_array = time.localtime(time_stamp)
+                a = Folder(self.user, self.here, dir_name, self.user.name, time.strftime('%Y-%m-%d %H:%M:%S', time_array))
+            # 将新建文件或文件夹对象加入主界面对象列表
+            self.main_board.append(a)
+            f_author = self.here.get_config(self.here.path + self.here.name + '/config.txt')  # 更新当前目录的config
+            f_author[dir_name] = self.user.name
+            self.here.update_config(f_author)
+            if status == 1:
+                with open(target_path + '/config.txt', 'w') as f:  # 为新建的文件夹创建config
+                    f.write('config.txt root')
+            return True
+        else:
+            return False
 
     # 删除文件或文件夹
     def delete(self, src_name, src_type):
