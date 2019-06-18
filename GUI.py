@@ -27,8 +27,8 @@ class MainWindow():
         self.ctrl = Frame(self.win)  # 控制面板，用于布局
         self.back = Button(self.ctrl, text = '<--', font = ft, command = self.cd_back)
         self.add_folder = Button(self.ctrl, text = '新建文件夹', font = ft, command = self.mkdir)
-        self.add_file = Button(self.ctrl, text = '新建文件', font = ft)
-        self.delete = Button(self.ctrl, text = '删除', font = ft, command = self.quit)
+        self.add_file = Button(self.ctrl, text = '新建文件', font = ft, command = self.touch)
+        self.delete = Button(self.ctrl, text = '删除', font = ft, command = self.f_delete)
         # 文件信息表初始化
         self.ftree = ttk.Treeview(self.win, show = 'headings')
         self.ftree['columns'] = ('fname', 'fdate', 'ftype', 'fsize', 'fauthor')
@@ -42,7 +42,7 @@ class MainWindow():
         self.ftree.heading('ftype', text = '类型', anchor = 'w')
         self.ftree.heading('fsize', text = '大小', anchor = 'w')
         self.ftree.heading('fauthor', text = '拥有者', anchor = 'w')
-        # 设置布局
+        # 使用grid布局
         self.l_user.grid(row = 0, column = 0, sticky = W)
         self.l_now.grid(row = 1, column = 0, sticky = W)
         self.l_dir.grid(row = 1, column = 1, sticky = W)
@@ -98,13 +98,33 @@ class MainWindow():
     # 新建文件夹
     def mkdir(self):
         time_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        flag, a = self.disk.mkdir(time_str)
-        if flag:
-            self.refesh()
-            print('>> mkdir ' + time_str)
-        else:
-            print('>> 已存在该文件夹')
+        self.disk.mkdir_or_touch(time_str, 1)
+        self.refesh()
+        print('>> mkdir ' + time_str)
+
+    # 创建新文件
+    def touch(self):
+        time_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        self.disk.mkdir_or_touch(time_str, 2)
+        self.refesh()
+        print('>> touch ' + time_str)
     
+    # 删除文件
+    def f_delete(self):
+        for item in self.ftree.selection():
+            item_text = self.ftree.item(item, "values")
+            src_name = item_text[0]
+            src_type = item_text[2]
+        flag =  self.disk.delete(src_name, src_type)
+        if flag == 2:
+            print('>> rd /s /q ' + src_name)
+            self.refesh()
+        elif flag == 1:
+            print('>> del ' + src_name)
+            self.refesh()
+        else:
+            print('>> 权限不足无法删除。')
+
     # 单击鼠标右键 - 重命名文件或文件夹
     def rename(self, event): # 右键进入编辑状态
         for item in self.ftree.selection():
@@ -121,9 +141,11 @@ class MainWindow():
         entryedit.place(x = 105 + (cn - 1) * 130, y = 88 + rn * 20)
         def save_edit():
             dst_name = entryedit.get()
-            self.ftree.set(item, column = column, value = dst_name)
-            self.disk.rename(src_name, dst_name)
-            print('>> rename(' + src_name + ', ' + dst_name + ')')
+            if self.disk.rename(src_name, dst_name):
+                self.ftree.set(item, column = column, value = dst_name)
+                print('>> rename(' + src_name + ', ' + dst_name + ')')
+            else:
+                print('>> 文件名已存在。')
             entryedit.destroy()
             okb.destroy()
         okb = Button(self.win, text='OK', width = 4, command = save_edit)
@@ -134,7 +156,7 @@ class MainWindow():
         self.ftree.bind('<Double-1>', self.cd_in)  # 双击鼠标左键
         self.ftree.bind('<Button-3>', self.rename)  # 单击鼠标右键
         self.win.mainloop()
-    
+
     # 退出
     def quit(self):
         self.win.quit()
@@ -162,7 +184,7 @@ class loginWindow():
         self.e_user_pwd = Entry(self.f_user_pwd)
         # 登录按钮
         self.b_login = Button(self.win, text = '登录', font = ft, command = self.login)
-        # 布局
+        # 使用pack布局
         self.l_title.pack(side = TOP, pady = 45)
         self.f_user_name.pack(side = TOP)
         self.l_name.pack(side = LEFT)
@@ -175,6 +197,7 @@ class loginWindow():
     def show(self):
         self.win.mainloop()
 
+    # 登录
     def login(self):
         user_name = self.e_user_name.get()
         user_pwd = self.e_user_pwd.get()
