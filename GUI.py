@@ -1,11 +1,23 @@
+# !/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from tkinter import ttk
 from tkinter import *
 from backEnd import *
 import datetime
 
+
 class MainWindow():
+    """
+    文件管理系统的主窗体(GUI)，显示当前用户、当前文件路径、当前路径下的文件及文件详细信息，
+    提供双击鼠标左键打开文件夹或运行程序、单击鼠标右键重命名文件功能，
+    提供可以新建或删除文件或文件夹的按钮，实现在模拟文件系统中的增删改查，
+    实现针对不同用户不同权限的可视化操作。
+    """
+
     def __init__(self, user):
+        """
+        初始化函数，生成窗体及相关元素
+        """
         # 获取后台信息
         self.disk = OSManager(user)
         # 生成窗体
@@ -55,20 +67,27 @@ class MainWindow():
         # 展示文件信息
         self.ls()
 
-    # 获取当前窗体实例
     def get_win(self):
+        """
+        获取当前窗体实例
+        @return: 当前窗体实例
+        """
         return self.win
 
-    # 展示当前目录下属于当前用户的所有文件
     def ls(self):
+        """
+        展示当前目录下属于当前用户的所有文件
+        """
         print('>> ls')
         fname, fdate, ftype, fsize, fauthor = self.disk.ls()
         for i in range(len(fname)):
             self.ftree.insert('', i, text='', 
                 values=(fname[i], fdate[i], ftype[i], fsize[i], fauthor[i]))
 
-    # 双击鼠标左键 - 进入下一级 或 运行目标程序
     def cd_in(self, event):
+        """
+        双击鼠标左键 - 进入下一级 或 运行目标程序
+        """
         for item in self.ftree.selection():
             item_text = self.ftree.item(item,"values")
             flag = self.disk.cd_in(item_text[0])
@@ -80,8 +99,10 @@ class MainWindow():
             else:
                 print('>> 权限不足，无法运行。')
 
-    # 点击返回按钮 - 返回上一级
     def cd_back(self):
+        """
+        点击返回按钮 - 返回上一级
+        """
         if self.disk.here._type == 'root':
             print('>> 已到根目录')
         else:
@@ -89,8 +110,10 @@ class MainWindow():
             self.disk.cd_back()
             self.refesh()
     
-    # 刷新
     def refesh(self):
+        """
+        刷新当前文件列表
+        """
         x = self.ftree.get_children()
         for item in x:
             self.ftree.delete(item)
@@ -98,8 +121,10 @@ class MainWindow():
         self.l_dir_text.set(self.disk.here.path + self.disk.here.name)
         self.ls()
 
-    # 新建文件夹
     def mkdir(self):
+        """
+        新建文件夹，默认文件名为当前系统时间
+        """
         time_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
         if self.disk.mkdir_or_touch(time_str, 1):
             self.refesh()
@@ -107,8 +132,10 @@ class MainWindow():
         else:
             print('>> 权限不足，无法新建文件夹。')
 
-    # 创建新文件
     def touch(self):
+        """
+        创建新文件，默认创建文本文件，文件名为当前系统时间
+        """
         time_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
         if self.disk.mkdir_or_touch(time_str, 2):
             self.refesh()
@@ -116,8 +143,10 @@ class MainWindow():
         else:
             print('>> 权限不足，无法新建文件。')
     
-    # 删除文件
     def f_delete(self):
+        """
+        删除文件，向后端传入选中的对象，然后根据后端返回的状态码判断完成的操作并输出
+        """
         for item in self.ftree.selection():
             item_text = self.ftree.item(item, "values")
             src_name = item_text[0]
@@ -133,8 +162,10 @@ class MainWindow():
         else:
             print('>> 权限不足，无法删除。')
 
-    # 单击鼠标右键 - 重命名文件或文件夹
-    def rename(self, event): # 右键进入编辑状态
+    def rename(self, event):
+        """
+        单击鼠标右键，重命名文件或文件夹
+        """
         for item in self.ftree.selection():
             item_text = self.ftree.item(item, "values")
             src_name = item_text[0]
@@ -164,16 +195,25 @@ class MainWindow():
         b_ok = Button(self.win, text='OK', width = 4, command = save_edit)
         b_ok.place(x = 285 + (cn - 1) * 242, y = 82 + rn * 20)
 
-    # 绑定事件，运行窗口
     def show(self):
+        """
+        绑定事件，运行窗口
+        """
         self.ftree.bind('<Double-1>', self.cd_in)  # 双击鼠标左键
         self.ftree.bind('<Button-3>', self.rename)  # 单击鼠标右键
         self.win.mainloop()
 
 
-# 登录窗口
 class loginWindow():
+    """
+    关键管理系统的登录窗口(GUI)，生成窗体，在输入框内输入用户名和密码，
+    若用户名和密码匹配成功则登录成功，销毁当前窗体，进入主界面（即生成MainWindow）
+    """
+
     def __init__(self):
+        """
+        初始化窗体，生成相关控件
+        """
         # 生成窗体
         self.win = Tk()
         self.win.title('登录')
@@ -203,12 +243,16 @@ class loginWindow():
         self.e_user_pwd.pack(side = RIGHT)
         self.b_login.pack(side = TOP)
 
-    # 运行
     def show(self):
+        """
+        运行
+        """
         self.win.mainloop()
 
-    # 登录
     def login(self):
+        """
+        登录，若用户名和密码验证成功则进入主界面
+        """
         user_name = self.e_user_name.get()
         user_pwd = self.e_user_pwd.get()
         user_info = {}
@@ -229,7 +273,8 @@ class loginWindow():
 
 
 if __name__ == "__main__":
-    # 主函数内只需生成登录窗口即可
+    """
+    主函数内只需生成登录窗口即可
+    """
     login = loginWindow()
     login.show()
-    user = User('Tony', 'rw')
