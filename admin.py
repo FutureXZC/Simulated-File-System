@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 import re
 
-
 class Admin():
     """
     管理员操作，包括登录和对用户信息的增删改查
@@ -40,7 +39,7 @@ class Admin():
             print('登录成功。')
             return True
         else:
-            print('管理员账号或密码错误！按任意键退出程序。')
+            print('管理员账号或密码错误！即将退出程序。')
             return False
 
     def update_user_info_file(self):
@@ -61,14 +60,14 @@ class Admin():
             pwd = input('请设置登录密码：')
             authority = input('请设置用户权限：')
             obj = re.match(r'[rwx]+$', authority)
-            if obj:
+            if obj and 'r' in authority:
                 s = set(authority)
                 authority = ''.join(s)
                 self.user_info[name] = [pwd, authority]
                 self.update_user_info_file()
                 print('创建成功。')
             else:
-                print('创建失败，用户权限只能为‘rwx’的组合。')
+                print('创建失败，用户权限只能为‘rwx’的组合且至少包含‘r’。')
         else:
             print('创建失败，用户名已存在。')
     
@@ -77,7 +76,9 @@ class Admin():
         删除一个现有用户
         """
         name = input('请输入要删除的用户名称：')
-        if name in self.user_info:
+        if name == 'root':
+            print('删除失败，root用户不可删除。')
+        elif name in self.user_info:
             del self.user_info[name]
             self.update_user_info_file()
             print('删除成功。')
@@ -123,10 +124,12 @@ if __name__ == "__main__":
             'del': root.del_user,
             'edit': root.edit_user
         }
-        print('命令集：')
-        print('new-新建用户 del-删除用户 ')
-        print('edit-修改用户信息 view-查看现有用户的详细信息')
-        print('quit-退出')
+        print('+-------------------------------------------------+')
+        print('|  命令集:\t\t\t\t\t  |')
+        print('|  new-新建用户      del-删除用户\t\t  |')
+        print('|  edit-修改用户信息 view-查看现有用户的详细信息  |')
+        print('|  quit-退出\t\t\t\t\t  |')
+        print('+-------------------------------------------------+')
         command = input('请输入操作命令：')
         while not command == 'quit':
             if command in switch:

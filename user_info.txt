@@ -1,3 +1,3 @@
 root 1234 rwx
-Tony abcd rw
+Tony tony wr
 Bob 4567 r

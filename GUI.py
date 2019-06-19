@@ -1,10 +1,10 @@
 # !/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from tkinter import ttk
+from tkinter import messagebox
 from tkinter import *
 from backEnd import *
 import datetime
-
 
 class MainWindow():
     """
@@ -108,12 +108,16 @@ class MainWindow():
         for item in self.ftree.selection():
             item_text = self.ftree.item(item,"values")
             flag = self.disk.cd_in(item_text[0])
-            if flag == 2:
+            if flag == 3:
+                messagebox.showwarning('警告', 'config.txt不可被查看。')
+                print('config.txt不可被查看。')
+            elif flag == 2:
                 print('>> cd ' + item_text[0])
                 self.refesh()
             elif flag == 1:
                 print('>> start ', item_text[0])
             else:
+                messagebox.showerror('权限不足', '无法运行程序。')
                 print('>> 权限不足，无法运行。')
 
     def cd_back(self):
@@ -121,6 +125,7 @@ class MainWindow():
         点击返回按钮 - 返回上一级
         """
         if self.disk.here._type == 'root':
+            messagebox.showinfo('提示', '已到根目录。')
             print('>> 已到根目录')
         else:
             print('>> cd ..')
@@ -147,6 +152,7 @@ class MainWindow():
             self.refesh()
             print('>> mkdir ' + time_str)
         else:
+            messagebox.showerror('权限不足', '无法新建文件夹。')
             print('>> 权限不足，无法新建文件夹。')
 
     def touch(self):
@@ -158,6 +164,7 @@ class MainWindow():
             self.refesh()
             print('>> touch ' + time_str)
         else:
+            messagebox.showerror('权限不足', '无法新建文件。')
             print('>> 权限不足，无法新建文件。')
     
     def f_delete(self):
@@ -171,13 +178,17 @@ class MainWindow():
             src_type = item_text[2]
         # 返回状态码，若为2则删除文件夹，若为1则删除文件，若为0则无权限删除
         flag =  self.disk.delete(src_name, src_type)
-        if flag == 2:
+        if flag == 3:
+            messagebox.showwarning('警告', 'config.txt不可以被删除。')
+            print('>> config.txt不可以被删除。')
+        elif flag == 2:
             print('>> rd /s /q ' + src_name)
             self.refesh()
         elif flag == 1:
             print('>> del ' + src_name)
             self.refesh()
         else:
+            messagebox.showerror('权限不足', '无法执行删除。')
             print('>> 权限不足，无法删除。')
 
     def rename(self, event):
@@ -188,30 +199,38 @@ class MainWindow():
             item_text = self.ftree.item(item, "values")
             src_name = item_text[0]
         children = self.ftree.get_children()
-        # 被选中节点的列编号，用于输入框定位
-        column= self.ftree.identify_column(event.x)
         # 被选中节点的行编号，用于输入框定位与更新值
         row = children.index(self.ftree.selection()[0]) + 1
-        cn = int(str(column).replace('#',''))
         rn = int(str(row).replace('I',''))
-        entry_edit = Entry(self.win, width = 25 + (cn - 1) * 16)
-        entry_edit.place(x = 105 + (cn - 1) * 130, y = 88 + rn * 20)
+        entry_edit = Entry(self.win, width = 25)
+        entry_edit.place(x = 105, y = 88 + rn * 20)
         # 按钮事件，用于触发文件名修改
         def save_edit():
             dst_name = entry_edit.get()
             flag = self.disk.rename(src_name, dst_name)
-            if flag == 2:
-                self.ftree.set(item, column = column, value = dst_name)
+            if flag == 4:
+                self.ftree.set(item, column = 0, value = dst_name)
+                name_div = dst_name.split('.')
+                dst_type = name_div[len(name_div) - 1]
+                self.ftree.set(item, column = 2, value = dst_type)
                 print('>> rename(' + src_name + ', ' + dst_name + ')')
+            elif flag == 3:
+                messagebox.showwarning('警告', 'config.txt不可以改名。')
+                print('>> config.txt不可以改名。')
+            elif flag == 2:
+                messagebox.showwarning('警告', '命名非法。')
+                print('>> 命名非法。')
             elif flag == 1:
+                messagebox.showwarning('警告', '文件名已存在。')
                 print('>> 文件名已存在。')
             else:
+                messagebox.showerror('权限不足', '无法重命名。')
                 print('>> 权限不足，无法修改。')
             entry_edit.destroy()
             b_ok.destroy()
         # "OK"按键
         b_ok = Button(self.win, text='OK', width = 4, command = save_edit)
-        b_ok.place(x = 285 + (cn - 1) * 242, y = 82 + rn * 20)
+        b_ok.place(x = 285, y = 82 + rn * 20)
 
     def show(self):
         """
@@ -291,6 +310,8 @@ class LoginWindow():
             self.win.destroy()
             main_window = MainWindow(user)
             main_window.show()
+        else:
+            messagebox.showerror('登录出错','用户不存在或密码不正确。')
 
 
 if __name__ == "__main__":

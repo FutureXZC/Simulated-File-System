@@ -4,7 +4,6 @@ import os
 import datetime
 import time
 
-
 class User():
     """
     用户类，包含用户名和用户权限
@@ -93,6 +92,8 @@ class FCB():
         dst_name = self.path + name
         os.rename(src_path, dst_name)  # 调用系统api进行重命名
         self.name = name
+        name_div = name.split('.')
+        self._type = name_div[len(name_div) - 1]
         f_author = {}
         target_path = self.parent.path + self.parent.name + '/config.txt'
         with open(target_path, 'r') as f:
@@ -320,12 +321,17 @@ class OSManager():
         """
         for item in self.main_board:
             if item.name == target_name:
-                if item._type == 'folder':  # 若为目录，则进入下一级
+                # 若为目录，则进入下一级
+                if item._type == 'folder':
                     self.here = item
                     self.main_board.clear()
                     self.main_board = item.get_children()
                     return 2
-                else:  # 若为可执行程序，则运行程序
+                else:
+                    # config.txt不可以被查看
+                    if target_name == 'config.txt':
+                        return 3
+                    # 若为可执行程序，则运行程序
                     if 'x' in self.user.authority:
                         target_path = item.path + target_name
                         os.system('start ' + target_path)
@@ -348,6 +354,9 @@ class OSManager():
         @returns 1: 文件名已存在，修改失败
         @returns 0: 权限不足，修改失败
         """
+        # config.txt不可以被改名
+        if src_name == 'config.txt':
+            return 3
         # 检查权限
         if 'w' in self.user.authority:
             # 获取文件名列表
@@ -357,13 +366,17 @@ class OSManager():
             # 要求重命名的文件不可与当前文件或文件夹同名
             for item in self.main_board:
                 if item.name == src_name:
+                    name_div = dst_name.split('.')
                     # 若文件名已存在，则拒绝修改
                     if dst_name in ls_list:
                         return 1
-                    # 若文件名不存在，则调用自身的rename方法修改
+                    # 检查命名合法性，若为文件则必须有".xxx"后缀
+                    elif len(name_div) == 1 and not item._type == 'folder':
+                        return 2
+                    # 若文件名不存在且命名合法，则调用自身的rename方法修改
                     else:
                         item.rename(dst_name)
-                        return 2
+                        return 4
         # 权限不足
         else:
             return 0
@@ -414,13 +427,14 @@ class OSManager():
         @returns 1: 成功删除文件
         @returns 0: 权限不足，删除失败
         """
+        # config.txt不可以被删除
+        if src_name == 'config.txt':
+            return 3
         if 'w' in self.user.authority:
             # 此处斜杠方向需转换
             path = self.here.path.replace('/', '\\') + self.here.name
-            print(path)
             # 删除文件夹
             if src_type == 'folder':
-                print('rd /s /q ' + path + '\\' + src_name)
                 os.system('rd /s /q ' + path + '\\' + src_name)
             # 删除文件
             else:
