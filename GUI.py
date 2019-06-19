@@ -8,10 +8,23 @@ import datetime
 
 class MainWindow():
     """
-    文件管理系统的主窗体(GUI)，显示当前用户、当前文件路径、当前路径下的文件及文件详细信息，
+    文件管理系统的主窗体(GUI)，
+    显示当前用户、当前文件路径、当前路径下的文件及文件详细信息，
     提供双击鼠标左键打开文件夹或运行程序、单击鼠标右键重命名文件功能，
     提供可以新建或删除文件或文件夹的按钮，实现在模拟文件系统中的增删改查，
     实现针对不同用户不同权限的可视化操作。
+    本类的所有方法均调用后端OSManager的方法
+    @method get_win: 获取当前窗体实例
+    @method ls: 展示当前目录下属于当前用户的所有文件
+    @method cd_in: 双击鼠标左键 - 进入下一级 或 运行目标程序
+    @method ca_back: 点击返回按钮 - 返回上一级
+    @method refresh: 刷新当前文件列表
+    @method mkdir: 新建文件夹，默认文件名为当前系统时间
+    @method touch: 创建新文件，默认创建文本文件，文件名为当前系统时间
+    @method f_delete: 删除文件，向后端传入选中的对象，
+                    然后根据后端返回的状态码判断操作完成与否并输出
+    @method rename: 单击鼠标右键，重命名文件或文件夹
+    @method show: 绑定表格上的事件，运行窗口
     """
 
     def __init__(self, user):
@@ -28,19 +41,23 @@ class MainWindow():
         ft = ('Microsoft YaHei', 10)  # 全局字体
         # 顶部label
         self.l_user = Label(self.win, text = self.disk.here.user.name, 
-                            bg = 'Plum', font = ft)
+                        bg = 'Plum', font = ft)
         self.l_now = Label(self.win, text = '当前目录：', 
-                            bg = 'Lavender', font = ft)
+                        bg = 'Lavender', font = ft)
         self.l_dir_text = StringVar()  # 动态更新当前路径
         self.l_dir_text.set(self.disk.here.path + self.disk.here.name)
         self.l_dir = Label(self.win, textvariable = self.l_dir_text, 
-                            bg = 'LightCyan', font = ft, width = 90, anchor = 'w')
+                        bg = 'LightCyan', font = ft, width = 90, anchor = 'w')
         # 操作按钮
         self.ctrl = Frame(self.win)  # 控制面板，用于布局
-        self.back = Button(self.ctrl, text = '<--', font = ft, command = self.cd_back)
-        self.add_folder = Button(self.ctrl, text = '新建文件夹', font = ft, command = self.mkdir)
-        self.add_file = Button(self.ctrl, text = '新建文件', font = ft, command = self.touch)
-        self.delete = Button(self.ctrl, text = '删除', font = ft, command = self.f_delete)
+        self.back = Button(self.ctrl, text = '<--',
+                        font = ft, command = self.cd_back)
+        self.add_folder = Button(self.ctrl, text = '新建文件夹',
+                        font = ft, command = self.mkdir)
+        self.add_file = Button(self.ctrl, text = '新建文件',
+                        font = ft, command = self.touch)
+        self.delete = Button(self.ctrl, text = '删除', font = ft,
+                        command = self.f_delete)
         # 文件信息表初始化
         self.ftree = ttk.Treeview(self.win, show = 'headings')
         self.ftree['columns'] = ('fname', 'fdate', 'ftype', 'fsize', 'fauthor')
@@ -145,7 +162,8 @@ class MainWindow():
     
     def f_delete(self):
         """
-        删除文件，向后端传入选中的对象，然后根据后端返回的状态码判断完成的操作并输出
+        删除文件，向后端传入选中的对象，
+        然后根据后端返回的状态码判断操作完成与否并输出
         """
         for item in self.ftree.selection():
             item_text = self.ftree.item(item, "values")
@@ -197,17 +215,19 @@ class MainWindow():
 
     def show(self):
         """
-        绑定事件，运行窗口
+        绑定表格上的事件，运行窗口
         """
         self.ftree.bind('<Double-1>', self.cd_in)  # 双击鼠标左键
         self.ftree.bind('<Button-3>', self.rename)  # 单击鼠标右键
         self.win.mainloop()
 
 
-class loginWindow():
+class LoginWindow():
     """
-    关键管理系统的登录窗口(GUI)，生成窗体，在输入框内输入用户名和密码，
-    若用户名和密码匹配成功则登录成功，销毁当前窗体，进入主界面（即生成MainWindow）
+    文件管理系统的登录窗口(GUI)，生成窗体，在输入框内输入用户名和密码，
+    若用户名和密码匹配成功则销毁当前窗体，进入主界面（即生成MainWindow）
+    @method show: 运行窗体
+    @method login: 登录，若用户名和密码匹配成功则进入主界面
     """
 
     def __init__(self):
@@ -232,7 +252,8 @@ class loginWindow():
         self.l_pwd = Label(self.f_user_pwd, text = '密   码：', font = ft)
         self.e_user_pwd = Entry(self.f_user_pwd)
         # 登录按钮
-        self.b_login = Button(self.win, text = '登录', font = ft, command = self.login)
+        self.b_login = Button(self.win, text = '登录',
+                        font = ft, command = self.login)
         # 使用pack布局
         self.l_title.pack(side = TOP, pady = 45)
         self.f_user_name.pack(side = TOP)
@@ -245,13 +266,13 @@ class loginWindow():
 
     def show(self):
         """
-        运行
+        运行窗体
         """
         self.win.mainloop()
 
     def login(self):
         """
-        登录，若用户名和密码验证成功则进入主界面
+        登录，若用户名和密码匹配成功则进入主界面
         """
         user_name = self.e_user_name.get()
         user_pwd = self.e_user_pwd.get()
@@ -262,7 +283,7 @@ class loginWindow():
                 line_tmp = line.strip('\n').split(' ')
                 user_info[line_tmp[0]] = [line_tmp[1], line_tmp[2]]
                 line = f.readline()
-        # 判断用户名和密码是否一致，若一致则推出当前窗口，将用户信息登录到主界面
+        # 判断用户名和密码是否匹配，若是则退出当前窗口，将用户信息登录到主界面
         if user_name in user_info and user_info[user_name][0] == user_pwd:
             print(user_info[user_name][1])
             user = User(user_name, user_info[user_name][1])
@@ -276,5 +297,5 @@ if __name__ == "__main__":
     """
     主函数内只需生成登录窗口即可
     """
-    login = loginWindow()
+    login = LoginWindow()
     login.show()

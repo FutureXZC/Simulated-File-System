@@ -1,8 +1,28 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
 import datetime
 import time
+
+
+class User():
+    """
+    用户类，包含用户名和用户权限
+    @attribute name: 用户名
+    @attribute authority: 用户权限，只能是r、w和x三者的组合
+                        权限r: 可读权限，默认每个用户都有，可以读取文件目录
+                        权限w: 可写权限，可以读、增、删、改文件，不可执行文件
+                        权限x: 可执行权限，除拥有上述权限外还可执行文件
+    """
+
+    def __init__(self, name, authority):
+        """
+        用传入的参数初始化用户实例
+        @param name: 用于初始化用户名
+        @param authority: 用于初始化用户权限
+        """
+        self.name = name
+        self.authority = authority
 
 
 class FCB():
@@ -167,6 +187,7 @@ class File(FCB):
     @attribute _type: 文件类型，由文件后缀决定，字符串
     @attribute size: 文件大小，单位为b，整型
     """
+    
     def __init__(self, user, parent, name, author, date):
         """
         初始化文件实例
@@ -176,7 +197,7 @@ class File(FCB):
         @param author: 用于初始化当前文件/文件夹对象的拥有者，字符串
         @param date: 用于初始化当前文件/文件夹对象的最后修改时间，字符串
         @attribute path: 由父级文件夹路径和父级文件夹名字拼接获取，字符串
-        @attribute _type: 文件类型，由name的后缀获取，字符串
+        @attribute _type: 文件类型，私有变量，由name的后缀获取，字符串
         @attribute size: 文件大小，单位为b，调用系统api得到，整型
         """
         self.user = user  # 当前用户
@@ -245,6 +266,12 @@ class OSManager():
     @attribute user: 正在操作的用户，User实例
     @attribute main_board: 当前显示目录的节点列表，列表
     @attribute here: 当前节点位置，为Root/Folder/File实例对象
+    @method ls: 展示当前目录下属于当前用户的所有文件
+    @method cd_in: 进入下一级 或 运行目标程序
+    @method cd_back: 返回上一级
+    @method rename: 重命名，若当前用户有w权限则调用文件/文件夹本身的方法
+    @method mkdir_or_touch: 创建文件夹/文件，若当前用户有w权限则调用系统api创建
+    @method delete: 删除文件或文件夹，若用户有w权限则调用系统api完成删除
     """
 
     def __init__(self, user):
@@ -316,7 +343,7 @@ class OSManager():
 
     def rename(self, src_name, dst_name):
         """
-        重命名，需检查用户权限是否含w，若有权限则调用文件/文件夹本身的方法
+        重命名，若当前用户有w权限则调用文件/文件夹本身的方法
         @returns 2: 成功调用自身的rename方法修改名字
         @returns 1: 文件名已存在，修改失败
         @returns 0: 权限不足，修改失败
@@ -343,7 +370,7 @@ class OSManager():
 
     def mkdir_or_touch(self, dir_name, status):
         """
-        创建文件夹或文件，需检查用户权限是否含w，若有权限则调用系统api创建
+        创建文件夹/文件，若当前用户有w权限则调用系统api创建
         创建的文件/文件夹默认用当前系统时间命名，创建的文件默认为txt文件
         @returns True: 创建成功
         @returns False: 权限不足，创建失败
@@ -382,7 +409,7 @@ class OSManager():
 
     def delete(self, src_name, src_type):
         """
-        删除文件或文件夹，需检查用户是否具有w权限，若有则调用系统api完成删除
+        删除文件或文件夹，若用户有w权限则调用系统api完成删除
         @returns 2: 成功删除文件夹
         @returns 1: 成功删除文件
         @returns 0: 权限不足，删除失败
@@ -414,24 +441,4 @@ class OSManager():
                 return 1
         else:  # 无权限
             return 0
-
-
-class User():
-    """
-    用户类，包含用户名和用户权限
-    @attribute name: 用户名
-    @attribute authority: 用户权限，只能是r、w和x三者的组合
-                        权限r: 可读权限，默认每个用户都有，可以读取文件目录
-                        权限w: 可写权限，可以读、增、删、改文件，不可执行文件
-                        权限x: 可执行权限，除拥有上述权限外还可执行文件
-    """
-
-    def __init__(self, name, authority):
-        """
-        用传入的参数初始化用户实例
-        @param name: 用于初始化用户名
-        @param authority: 用于初始化用户权限
-        """
-        self.name = name
-        self.authority = authority
          
