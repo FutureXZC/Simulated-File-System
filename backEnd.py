@@ -4,11 +4,23 @@ import os
 import datetime
 import time
 
+def get_time(path):
+    """
+    获取目标文件的最后修改时间，并转换为字符串返回
+    @param path: 目标文件的路径，字符串
+    @returns t_date: 文件最后修改时间，字符串
+    """
+    t_stamp = os.path.getmtime(path)
+    t_array = time.localtime(t_stamp)
+    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+    return t_date
+
+
 class User():
     """
     用户类，包含用户名和用户权限
-    @attribute name: 用户名
-    @attribute authority: 用户权限，只能是r、w和x三者的组合
+    @attribute name: 用户名，字符串
+    @attribute authority: 用户权限，只能是r、w和x三者的组合，字符串
                         权限r: 可读权限，默认每个用户都有，可以读取文件目录
                         权限w: 可写权限，可以读、增、删、改文件，不可执行文件
                         权限x: 可执行权限，除拥有上述权限外还可执行文件
@@ -17,8 +29,8 @@ class User():
     def __init__(self, name, authority):
         """
         用传入的参数初始化用户实例
-        @param name: 用于初始化用户名
-        @param authority: 用于初始化用户权限
+        @param name: 用于初始化用户名，字符串
+        @param authority: 用于初始化用户权限，字符串
         """
         self.name = name
         self.authority = authority
@@ -59,7 +71,7 @@ class FCB():
     def get_config(self, target_path):
         """
         获取目录的配置文件config.txt，内含文件对应的所有者信息
-        @param target_path: config.txt的路径
+        @param target_path: config.txt的路径，字符串
         @returns f_author: 从config.txt中读出的文件拥有者信息，
                 存储在字典f_author内，表现为'key-value': '文件名-拥有者'
         """
@@ -75,7 +87,7 @@ class FCB():
     def update_config(self, f_author):
         """
         更新目录的配置文件config.txt
-        @param f_author: 用于更新的数据源，'key-value'为'文件名-拥有者'的字典
+        @param f_author: 用于更新的数据源，'key-value'为'文件名-拥有者'，字典
         """
         with open(self.path + self.name + '/config.txt', 'w') as f:
             for item in f_author:
@@ -113,7 +125,7 @@ class FCB():
     def back(self):
         """
         返回上一级，调用系统api分别获取父级目录的文件夹和文件的列表
-        @returns parent_list: 列表，其元素为父级目录的文件夹对象和文件对象
+        @returns parent_list: 父级目录的文件夹对象和文件对象，列表
         """
         parent_list = []  # 父级目录的文件列表
         target_path = self.parent.path + self.parent.name + '/config.txt'
@@ -122,18 +134,14 @@ class FCB():
         for root, dirs, files in os.walk(parent_path):  
             for i in dirs:
                 if self.user.name == f_author[i] or self.user.name == 'root':
-                    path = self.parent.path  # 获取最后修改时间
-                    t_stamp = os.path.getmtime(path)
-                    t_array = time.localtime(t_stamp)
-                    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                    path = parent_path + '/' + i  # 获取最后修改时间
+                    t_date = get_time(path)
                     a = Folder(self.user, self.parent, i, f_author[i], t_date)
                     parent_list.append(a)  # 将文件夹对象加入子节点
             for i in files:
                 if self.user.name == f_author[i] or self.user.name == 'root':
-                    path = self.parent.path
-                    t_stamp = os.path.getmtime(path)
-                    t_array = time.localtime(t_stamp)
-                    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                    path = parent_path + '/' + i
+                    t_date = get_time(path)
                     a = File(self.user, self.parent, i, f_author[i], t_date)
                     parent_list.append(a)  # 将文件对象加入子节点
             break
@@ -165,17 +173,13 @@ class Folder(FCB):
             for i in dirs:
                 if self.user.name == f_author[i] or self.user.name == 'root':
                     path = self.path + self.name + '/' + i  # 获取最后修改时间
-                    t_stamp = os.path.getmtime(path)
-                    t_array = time.localtime(t_stamp)
-                    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                    t_date = get_time(path)
                     a = Folder(self.user, self, i, f_author[i], t_date)
                     self.children.append(a)  # 将文件夹对象加入子节点
             for i in files:
                 if self.user.name == f_author[i] or self.user.name == 'root':
                     path = self.path + self.name + '/' + i
-                    t_stamp = os.path.getmtime(path)
-                    t_array = time.localtime(t_stamp)
-                    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                    t_date = get_time(path)
                     a = File(self.user, self, i, f_author[i], t_date)
                     self.children.append(a)  # 将文件对象加入子节点
             break
@@ -197,9 +201,6 @@ class File(FCB):
         @param name: 用于初始化当前文件/文件夹对象的名称，字符串
         @param author: 用于初始化当前文件/文件夹对象的拥有者，字符串
         @param date: 用于初始化当前文件/文件夹对象的最后修改时间，字符串
-        @attribute path: 由父级文件夹路径和父级文件夹名字拼接获取，字符串
-        @attribute _type: 文件类型，私有变量，由name的后缀获取，字符串
-        @attribute size: 文件大小，单位为b，调用系统api得到，整型
         """
         self.user = user  # 当前用户
         self.parent = parent  # parent必须是一个文件夹
@@ -215,17 +216,18 @@ class File(FCB):
 class Root(Folder):
     """
     根节点，继承Folder，附加部分特性
+    @attribute name: 根节点名字固定为空（即''），字符串
+    @attribute _type: 根节点类型为'root'，字符串
+    @attribute path: 根节点路径固定为'root'，字符串
+    @attribute children: 根节点的子节点列表初始化为空，字符串
+    @attribute user: 当前用户user，由控制程序传入，User对象
     @method load: 初始化装载，完成对root节点的children的初始化
     """
 
     def __init__(self, user):
         """
         初始化根节点
-        @attribute name: 根节点名字固定为空（即''）
-        @attribute _type: 根节点类型为'root'
-        @attribute path: 根节点路径固定为'root'
-        @attribute children: 根节点的子节点列表初始化为空
-        @attribute user: 当前用户user，由控制程序传入
+        @param user: 当前用户，用于初始化，User对象
         """
         self.name = ''
         self._type = 'root'
@@ -244,17 +246,13 @@ class Root(Folder):
             for i in dirs:
                 if self.user.name == f_author[i] or self.user.name == 'root':
                     path = self.path + '/' + i  # 获取最后修改时间
-                    t_stamp = os.path.getmtime(path)
-                    t_array = time.localtime(t_stamp)
-                    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                    t_date = get_time(path)
                     a = Folder(self.user, self, i, f_author[i], t_date)
                     self.children.append(a)  # 将文件夹对象加入子节点
             for i in files:
                 if self.user.name == f_author[i] or self.user.name == 'root':
                     path = self.path + '/' + i
-                    t_stamp = os.path.getmtime(path)
-                    t_array = time.localtime(t_stamp)
-                    t_date = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                    t_date = get_time(path)
                     a = File(self.user, self, i, f_author[i], t_date)
                     self.children.append(a)  # 将文件对象加入子节点
             break
@@ -350,6 +348,8 @@ class OSManager():
     def rename(self, src_name, dst_name):
         """
         重命名，若当前用户有w权限则调用文件/文件夹本身的方法
+        @param src_name: 文件原来的名称，字符串
+        @param dst_name: 重命名后的文件名称，字符串
         @returns 2: 成功调用自身的rename方法修改名字
         @returns 1: 文件名已存在，修改失败
         @returns 0: 权限不足，修改失败
@@ -385,6 +385,8 @@ class OSManager():
         """
         创建文件夹/文件，若当前用户有w权限则调用系统api创建
         创建的文件/文件夹默认用当前系统时间命名，创建的文件默认为txt文件
+        @param dir_name: 新建的文件名，字符串
+        @param status: 状态码，2代表创建文件，1代表创建文件夹，整形
         @returns True: 创建成功
         @returns False: 权限不足，创建失败
         """
@@ -396,15 +398,11 @@ class OSManager():
             # 创建
             if status == 2:  # 创建文件
                 os.system('type nul>' + target_path)  
-                t_stamp = os.path.getmtime(target_path)
-                t_array = time.localtime(t_stamp)
-                t = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                t = get_time(target_path)
                 a = File(self.user, self.here, dir_name, self.user.name, t)
             elif status ==1:  # 创建文件夹
                 os.makedirs(target_path, 0o777)
-                t_stamp = os.path.getmtime(target_path)
-                t_array = time.localtime(t_stamp)
-                t = time.strftime('%Y-%m-%d %H:%M:%S', t_array)
+                t = get_time(target_path)
                 a = Folder(self.user, self.here, dir_name, self.user.name, t)
             # 将新建文件或文件夹对象加入主界面对象列表
             self.main_board.append(a)
@@ -423,6 +421,8 @@ class OSManager():
     def delete(self, src_name, src_type):
         """
         删除文件或文件夹，若用户有w权限则调用系统api完成删除
+        @param src_name: 将要删除的文件名
+        @param src_type: 将要删除的文件的类型
         @returns 2: 成功删除文件夹
         @returns 1: 成功删除文件
         @returns 0: 权限不足，删除失败

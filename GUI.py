@@ -30,6 +30,7 @@ class MainWindow():
     def __init__(self, user):
         """
         初始化函数，生成窗体及相关元素
+        @param user: 当前登录的用户，User对象
         """
         # 获取后台信息
         self.disk = OSManager(user)
@@ -103,7 +104,8 @@ class MainWindow():
 
     def cd_in(self, event):
         """
-        双击鼠标左键 - 进入下一级 或 运行目标程序
+        进入下一级 或 运行目标程序
+        @event: 双击鼠标左键
         """
         for item in self.ftree.selection():
             item_text = self.ftree.item(item,"values")
@@ -193,7 +195,8 @@ class MainWindow():
 
     def rename(self, event):
         """
-        单击鼠标右键，重命名文件或文件夹
+        重命名文件或文件夹
+        @event: 单击鼠标右键
         """
         for item in self.ftree.selection():
             item_text = self.ftree.item(item, "values")
@@ -306,7 +309,7 @@ class LoginWindow():
         if user_name in user_info and user_info[user_name][0] == user_pwd:
             print(user_info[user_name][1])
             user = User(user_name, user_info[user_name][1])
-            self.win.quit()
+            # self.win.quit()
             self.win.destroy()
             main_window = MainWindow(user)
             main_window.show()
