@@ -1,6 +1,6 @@
 # !/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import re
+from re import match
 
 class Admin():
     """
@@ -59,7 +59,7 @@ class Admin():
         if not name in self.user_info:
             pwd = input('请设置登录密码：')
             authority = input('请设置用户权限：')
-            obj = re.match(r'[rwx]+$', authority)
+            obj = match(r'[rwx]+$', authority)
             if obj and 'r' in authority:
                 s = set(authority)
                 authority = ''.join(s)
@@ -93,7 +93,7 @@ class Admin():
         if name in self.user_info:
             pwd = input('请输入该用户的新密码：')
             authority = input('请输入该用户的新权限：')
-            obj = re.match(r'[rwx]+$', authority)
+            obj = match(r'[rwx]+$', authority)
             if obj:
                 s = set(authority)
                 authority = ''.join(s)
